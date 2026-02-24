@@ -11,3 +11,4 @@ wikipedia
 python-magic
 ultralytics
 streamlit
+opencv-python-headless
