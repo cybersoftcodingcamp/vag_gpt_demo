@@ -2,7 +2,8 @@
 from langchain_community.tools import ArxivQueryRun, WikipediaQueryRun
 from langchain_community.utilities import ArxivAPIWrapper, WikipediaAPIWrapper
 from langchain_openai import ChatOpenAI
-from langchain.agents import create_react_agent
+# from langchain.agents import create_react_agent
+from langgraph.prebuilt import create_react_agent
 from langgraph_supervisor import create_supervisor
 from langchain.chat_models import init_chat_model
 from tools import image_describer_tool, detect_and_count_object_tool
@@ -16,16 +17,18 @@ wikipedia = WikipediaQueryRun(api_wrapper=wikipedia_wrapper, description="Search
 
 # Research Agent
 research_agent = create_react_agent(
-    ChatOpenAI(model="gpt-4o-mini"),
+    model=ChatOpenAI(model="gpt-4o-mini"),
     tools=[arxiv, wikipedia],
     prompt="You are a research agent.\n\nINSTRUCTIONS:\n- Assist ONLY with research-related tasks, DO NOT do any math\n- After you're done with your tasks, respond to the supervisor directly\n- Respond ONLY with the results of your work, do NOT include ANY other text.",
+    name="research_agent",
 )
 
 # Vision Agent
 vision_agent = create_react_agent(
-    ChatOpenAI(model="gpt-4o-mini"),
+    model=ChatOpenAI(model="gpt-4o-mini"),
     tools=[image_describer_tool, detect_and_count_object_tool],
     prompt="You are a vision agent.\n\nINSTRUCTIONS:\n- Assist ONLY with visual tasks (e.g., describing images, detecting and counting objects)\n- Use only the tools provided to analyze visual inputs\n- After completing your task, respond to the supervisor directly\n- Respond ONLY with the results of your work, do NOT include ANY other text.",
+    name="vision_agent"
 )
 
 # Supervisor
