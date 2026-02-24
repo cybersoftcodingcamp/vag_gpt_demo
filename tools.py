@@ -12,7 +12,7 @@ from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
 from langchain_core.tools import tool
 from ultralytics import YOLO
-from typing import Type  # Import Type for annotation
+from typing import Type
 
 # Load YOLO model
 yolo_model = YOLO("yolo11x.pt")
@@ -90,7 +90,7 @@ class ImageDescriberInput(BaseModel):
 class ImageDescriberTool(BaseTool):
     name: str = "image_describer"
     description: str = "This tool can describe the image in a detailed way"
-    args_schema: Type[BaseModel] = ImageDescriberInput  # Add type annotation here
+    args_schema: Type[BaseModel] = ImageDescriberInput
     return_direct: bool = True
 
     def _run(self, text: str, run_manager: CallbackManagerForToolRun = None) -> str:

@@ -1,70 +1,135 @@
 # app.py (Main Streamlit App)
 import streamlit as st
-from agents import research_agent, vision_agent, supervisor
-from tools import image_describer_tool, detect_and_count_object_tool, encode_image, extractor_chain, yolo_model
-from dotenv import load_dotenv
-
-# Set environment variables (thay bằng keys thật của bạn)
 import os
-# Load variables from .env
-load_dotenv()  # Load tất cả từ .env vào os.environ
+import tempfile
+from PIL import Image
+import requests
+from dotenv import load_dotenv
+from agents import supervisor
 
-# Kiểm tra và sử dụng (nếu cần fallback)
+# Load environment variables
+load_dotenv()
 os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
 os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT")
 os.environ["LANGCHAIN_TRACING_V2"] = os.getenv("LANGCHAIN_TRACING_V2")
 os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY")
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
-st.set_page_config(page_title="Visual Agentic AI", page_icon="🤖", layout="wide")
+# UI Configuration
+st.set_page_config(
+    page_title="Visual Agentic AI",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# CSS tùy chỉnh để làm đẹp
+# Custom CSS
 st.markdown("""
-    <style>
-    .main {background-color: #f0f4f8;}
-    .stButton>button {background-color: #4CAF50; color: white; border-radius: 8px;}
-    .sidebar .sidebar-content {background-color: #e8f5e9;}
-    </style>
+<style>
+    .main {background-color: #f8f9fa;}
+    .stButton>button {background-color: #0066cc; color: white; border-radius: 8px; height: 3em;}
+    .uploadedFile {border: 2px dashed #0066cc; border-radius: 10px; padding: 10px;}
+</style>
 """, unsafe_allow_html=True)
 
-# Sidebar: Mô tả dự án và hướng dẫn
+# Sidebar
 with st.sidebar:
-    st.image("https://source.unsplash.com/random/300x200/?ai+agent", caption="Visual Agentic AI")  # Hình ảnh placeholder
+    st.image("https://source.unsplash.com/random/300x200/?ai+vision", caption="Visual Agentic AI")
     st.header("🤖 Visual Agentic AI")
     st.markdown("""
-    **Mô tả Dự Án:**  
-    Đây là hệ thống AI agentic sử dụng LangGraph để kết hợp:  
-    - **Research Agent**: Tìm kiếm thông tin, tài liệu từ Arxiv và Wikipedia.  
-    - **Vision Agent**: Phân tích hình ảnh (mô tả, phát hiện và đếm đối tượng sử dụng YOLO).  
-    - **Supervisor**: Quản lý và giao nhiệm vụ cho các agent phù hợp.  
-    Dự án giúp xử lý query kết hợp research và vision một cách thông minh.
+    **Tính năng:**
+    - Upload ảnh hoặc dán link ảnh
+    - Hỏi bất kỳ điều gì về ảnh (mô tả, đếm vật, màu sắc…)
+    - Tìm kiếm nghiên cứu khoa học liên quan
+    - Supervisor tự động phân công Research / Vision Agent
     """)
     
-    st.header("📖 Hướng Dẫn Sử Dụng")
+    st.divider()
+    st.header("📖 Hướng dẫn")
     st.markdown("""
-    1. Nhập query vào ô text (ví dụ: "What is the latest research on positional embeddings?" hoặc "How many dogs in image: https://example.com/image.jpg").  
-    2. Nhấn "Run Query".  
-    3. Xem output streaming ở bên dưới.  
-    Lưu ý: Query có thể bao gồm URL hình ảnh cho vision tasks.
+    1. Chọn cách đưa ảnh vào (Upload hoặc URL)  
+    2. Nhập câu hỏi của bạn  
+    3. Nhấn **Phân tích ảnh**
     """)
 
-# Main content
-st.title("🤖 Visual Agentic AI Tester")
-st.markdown("Nhập query của bạn dưới đây để test hệ thống.")
+# Main Content
+st.title("🤖 Visual Agentic AI – Phiên bản Upload")
 
-query = st.text_area("Query:", height=100, placeholder="Ví dụ: What is the concept visualized in the image? Image: https://huggingface.co/datasets/tmnam20/Storage/resolve/main/rope.png")
+col1, col2 = st.columns([1, 2])
 
-if st.button("Run Query"):
-    if query:
-        with st.spinner("Processing..."):
-            output_container = st.empty()
+with col1:
+    st.subheader("📸 Ảnh đầu vào")
+    input_mode = st.radio("Chọn cách đưa ảnh vào:", 
+                         ["Upload ảnh từ máy", "Dán link URL"], 
+                         horizontal=True)
+
+    image_source = None
+    preview_image = None
+
+    if input_mode == "Upload ảnh từ máy":
+        uploaded_file = st.file_uploader(
+            "Chọn ảnh (PNG, JPG, JPEG, WEBP)",
+            type=["png", "jpg", "jpeg", "webp"],
+            help="Tối đa 10MB"
+        )
+        if uploaded_file:
+            # Lưu tạm vào disk để tool có thể đọc được
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                tmp.write(uploaded_file.getbuffer())
+                image_source = tmp.name
+            preview_image = Image.open(uploaded_file)
+            st.success("Ảnh đã upload thành công!")
+
+    else:  # URL mode
+        url = st.text_input("Dán link ảnh:", placeholder="https://example.com/image.jpg")
+        if url:
+            image_source = url.strip()
             try:
-                for chunk in supervisor.stream({"messages": [{"role": "user", "content": query}]}):
-                    messages = chunk.get("supervisor", {}).get("messages", [])
-                    if messages:
-                        last_message = messages[-1] if isinstance(messages, list) else messages
-                        output_container.write(last_message)
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
-    else:
-        st.warning("Vui lòng nhập query!")
+                preview_image = Image.open(requests.get(url, stream=True).raw)
+                st.success("Link hợp lệ!")
+            except:
+                st.error("Không thể tải ảnh từ link này")
+
+    # Preview
+    if preview_image:
+        st.image(preview_image, caption="Ảnh preview", use_column_width=True)
+
+with col2:
+    st.subheader("❓ Câu hỏi của bạn")
+    query = st.text_area(
+        "Nhập câu hỏi (ví dụ: \"Mô tả ảnh này\", \"Có bao nhiêu con chó?\", \"Màu lông con chó là gì? Tìm thêm thông tin về giống chó này\")",
+        height=120,
+        placeholder="Hỏi gì cũng được về ảnh..."
+    )
+
+    if st.button("🚀 Phân tích ảnh", type="primary", use_container_width=True):
+        if not query:
+            st.warning("Vui lòng nhập câu hỏi!")
+        elif not image_source:
+            st.warning("Vui lòng upload ảnh hoặc dán link!")
+        else:
+            with st.spinner("Đang xử lý... Supervisor đang phân công agent..."):
+                # Tạo query đầy đủ cho hệ thống
+                full_query = f"{query}\nImage: {image_source}"
+
+                output_container = st.empty()
+                full_response = ""
+
+                try:
+                    for chunk in supervisor.stream(
+                        {"messages": [{"role": "user", "content": full_query}]}
+                    ):
+                        messages = chunk.get("supervisor", {}).get("messages", [])
+                        if messages:
+                            last_msg = messages[-1]
+                            # Lấy nội dung text
+                            content = last_msg.content if hasattr(last_msg, "content") else str(last_msg)
+                            full_response += content + "\n"
+                            output_container.markdown(full_response)
+
+                except Exception as e:
+                    st.error(f"Lỗi: {str(e)}")
+
+                # Xóa file tạm sau khi xong
+                if input_mode == "Upload ảnh từ máy" and image_source and os.path.exists(image_source):
+                    os.unlink(image_source)
