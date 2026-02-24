@@ -34,7 +34,7 @@ st.markdown("""
 
 # Thanh bên
 with st.sidebar:
-    st.image("https://source.unsplash.com/random/300x200/?ai+vision", caption="Visual Agentic AI")
+    st.image("./images/vag-logo.png", caption="Visual Agentic AI")
     st.header("🤖 Visual Agentic AI")
     st.markdown("""
     **Tính năng:**
@@ -53,7 +53,7 @@ with st.sidebar:
     """)
 
 # Nội dung chính
-st.title("🤖 Visual Agentic AI – Phiên bản Tải lên")
+st.title("🤖 Visual Agentic AI – Cybersoft AI")
 
 col1, col2 = st.columns([1, 2])
 
