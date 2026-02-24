@@ -1,0 +1,13 @@
+langchain==0.3.24
+langchain-openai==0.3.14
+langgraph==0.3.33
+langchain-tavily==0.1.6
+langgraph-supervisor
+langchain-core
+langchain-community
+arxiv
+duckduckgo-search
+wikipedia
+python-magic
+ultralytics
+streamlit
