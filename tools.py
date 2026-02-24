@@ -1,4 +1,4 @@
-# tools.py (Module for Tools and Utilities)
+# tools.py (Module cho Công cụ và Tiện ích)
 import base64
 import os
 import magic
@@ -14,10 +14,10 @@ from langchain_core.tools import tool
 from ultralytics import YOLO
 from typing import Type
 
-# Load YOLO model
+# Tải mô hình YOLO
 yolo_model = YOLO("yolo11x.pt")
 
-# Encode image function
+# Hàm mã hóa ảnh
 def encode_image(image_path_or_url: str, get_mime_type: bool = False):
     if image_path_or_url.startswith("http"):
         try:
@@ -45,9 +45,9 @@ def encode_image(image_path_or_url: str, get_mime_type: bool = False):
         else:
             return None, None if get_mime_type else None
 
-# ImageInput and Extractor Chain
+# ImageInput và Chuỗi Trích xuất
 class ImageInput(BaseModel):
-    image_path_or_url: str = Field(description="Image path or URL")
+    image_path_or_url: str = Field(description="Đường dẫn hoặc URL ảnh")
 
 parser = PydanticOutputParser(pydantic_object=ImageInput)
 prompt = ChatPromptTemplate.from_template(
@@ -55,27 +55,32 @@ prompt = ChatPromptTemplate.from_template(
 ).partial(format_instructions=parser.get_format_instructions())
 extractor_chain = prompt | ChatOpenAI(model="gpt-4o-mini") | parser
 
-# Image Description
+# Mô tả Ảnh
 class ImageDescription(BaseModel):
-    image_description: str = Field(description="Detailed description of the image")
+    image_description: str = Field(description="Mô tả chi tiết về ảnh")
 
 def image_describer_prompt_func(inputs: dict):
     image_path_or_url = inputs["image_path_or_url"]
     image_b64, image_mime_type = encode_image(image_path_or_url, get_mime_type=True)
     image_describer_chat_template = ChatPromptTemplate.from_messages([
         SystemMessage(
-            content="""You are an expert image describer. When presented with an image, provide a detailed, accurate, and objective description of its visible content. Focus on aspects such as:
-            - Objects present, their positions, and relationships
-            - Colors, lighting, composition, and textures
-            - Actions or dynamics, if any (e.g., people walking, water flowing)
-            - Contextual or inferred information (e.g., likely setting, era, or activity)
+            content="""You are an expert image describer with advanced analytical capabilities. When presented with an image, provide a highly detailed, accurate, and objective description of its visible content. Structure your response as a comprehensive report, covering the following aspects in depth:
 
-            Avoid adding information that is not visible or cannot be reasonably inferred from the image. Do not speculate or inject personal opinion unless explicitly requested. If text appears in the image, transcribe it accurately."""),
+- **Overall Composition and Layout**: Describe the image's structure (e.g., symmetrical/asymmetrical, rule of thirds), focal points, foreground/background separation, and spatial organization (e.g., left/right/center dominance).
+- **Objects and Entities**: List all primary and secondary objects/people/animals, their classifications (e.g., breed/species if inferable), quantities, sizes (relative to frame, e.g., 'occupies 30% of the image'), precise positions (e.g., 'top-left corner, centered horizontally'), and relationships/interactions (e.g., 'object A overlaps object B by 20%').
+- **Colors and Lighting**: Analyze color palette (dominant hues, contrasts, saturation), lighting sources (natural/artificial, direction/shadows), and effects (e.g., high-key/low-key, glare, highlights/lowlights).
+- **Textures and Materials**: Detail surface qualities (e.g., smooth/rough, glossy/matte), materials (e.g., wood/metal/fabric), and patterns (e.g., repetitive motifs, gradients).
+- **Actions and Dynamics**: Describe any motion/implied movement (e.g., 'person running towards right, blurred background suggesting speed'), poses/expressions (e.g., 'smiling face with raised eyebrows indicating surprise'), and temporal elements (e.g., 'daytime scene with long shadows suggesting afternoon').
+- **Context and Inferences**: Infer logical settings (e.g., 'urban street in modern city, likely evening based on lighting'), era/style (e.g., 'vintage photo from 1950s aesthetic'), and potential narratives (e.g., 'family gathering in a park')—but only if directly supported by visible evidence.
+- **Text and Symbols**: Transcribe all visible text exactly (including fonts/styles), and describe any symbols/logos/icons with their meanings if obvious.
+- **Technical Details**: Note image quality (e.g., resolution artifacts, noise), perspective (e.g., wide-angle distortion), and anomalies (e.g., overexposure in areas).
+
+Ensure the description is exhaustive yet concise, prioritized by salience (most prominent elements first). Avoid any information not visible or reasonably inferable; do not speculate, add personal opinions, or hallucinate details. If the image is unclear in parts, note it explicitly (e.g., 'blurred area in bottom-right prevents identification')."""),
         HumanMessage(content=[
             {"type": "text", "text": "Describe the following image for me:"},
             {
                 "type": "image_url",
-                "image_url": {"url": f"data:{image_mime_type};base64,{image_b64}", "detail": "low"}
+                "image_url": {"url": f"data:{image_mime_type};base64,{image_b64}", "detail": "high"}  # Thay 'low' bằng 'high' để phân tích chi tiết hơn
             }
         ])
     ])
@@ -83,13 +88,13 @@ def image_describer_prompt_func(inputs: dict):
 
 image_describer_agent = image_describer_prompt_func | ChatOpenAI(model="gpt-4o-mini").with_structured_output(ImageDescription)
 
-# Image Describer Tool
+# Công cụ Mô tả Ảnh
 class ImageDescriberInput(BaseModel):
-    text: str = Field(description="Path or URL to the image in the format PNG or JPG/JPEG")
+    text: str = Field(description="Đường dẫn hoặc URL ảnh ở định dạng PNG hoặc JPG/JPEG")
 
 class ImageDescriberTool(BaseTool):
     name: str = "image_describer"
-    description: str = "This tool can describe the image in a detailed way"
+    description: str = "Công cụ này có thể mô tả ảnh một cách chi tiết"
     args_schema: Type[BaseModel] = ImageDescriberInput
     return_direct: bool = True
 
@@ -97,32 +102,32 @@ class ImageDescriberTool(BaseTool):
         try:
             parsed = extractor_chain.invoke({"input": text})
         except Exception as e:
-            return f"Failed to extract image URL: {str(e)}"
+            return f"Không thể trích xuất URL ảnh: {str(e)}"
         image_path_or_url = parsed.image_path_or_url
         if not image_path_or_url:
-            return "No image URL found in the input."
+            return "Không tìm thấy URL ảnh trong đầu vào."
         output = image_describer_agent.invoke({"image_path_or_url": image_path_or_url})
         return output.image_description
 
 image_describer_tool = ImageDescriberTool()
 
-# Object Detection Tool
+# Công cụ Phát hiện và Đếm Đối tượng
 class ObjectDetectingAndCountingInput(BaseModel):
-    text: str = Field(description="Path or URL to the image in the format PNG or JPG/JPEG")
+    text: str = Field(description="Đường dẫn hoặc URL ảnh ở định dạng PNG hoặc JPG/JPEG")
 
 @tool(
     "detect_and_count_objects",
-    description="Detect and count objects within the image. The return will be a dictionary, containing the counting dictionary (counting how many instance of each object class) and a list of dictionaries, containing the object names, confidence scores, and location in the image (in (x1, x2, y1, y2) format).",
+    description="Phát hiện và đếm đối tượng trong ảnh. Kết quả trả về là từ điển, chứa từ điển đếm (đếm số lượng từng lớp đối tượng) và danh sách từ điển chứa tên đối tượng, điểm tin cậy, và vị trí trong ảnh (định dạng (x1, x2, y1, y2)).",
     args_schema=ObjectDetectingAndCountingInput
 )
 def detect_and_count_object_tool(text: str):
     try:
         parsed = extractor_chain.invoke({"input": text})
     except Exception as e:
-        return f"Failed to extract image URL: {str(e)}"
+        return f"Không thể trích xuất URL ảnh: {str(e)}"
     image_path_or_url = parsed.image_path_or_url
     if not image_path_or_url:
-        return "No image URL found in the input."
+        return "Không tìm thấy URL ảnh trong đầu vào."
 
     results = yolo_model(image_path_or_url, verbose=False)
 
