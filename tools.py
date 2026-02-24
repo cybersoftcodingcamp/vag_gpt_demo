@@ -1,4 +1,4 @@
-# tools.py (Module cho Công cụ và Tiện ích)
+# tools.py (Module for Tools and Utilities)
 import base64
 import os
 import magic
@@ -14,10 +14,10 @@ from langchain_core.tools import tool
 from ultralytics import YOLO
 from typing import Type
 
-# Tải mô hình YOLO
+# Load YOLO model
 yolo_model = YOLO("yolo11x.pt")
 
-# Hàm mã hóa ảnh
+# Encode image function
 def encode_image(image_path_or_url: str, get_mime_type: bool = False):
     if image_path_or_url.startswith("http"):
         try:
@@ -45,9 +45,9 @@ def encode_image(image_path_or_url: str, get_mime_type: bool = False):
         else:
             return None, None if get_mime_type else None
 
-# ImageInput và Chuỗi Trích xuất
+# ImageInput and Extractor Chain
 class ImageInput(BaseModel):
-    image_path_or_url: str = Field(description="Đường dẫn hoặc URL ảnh")
+    image_path_or_url: str = Field(description="Image path or URL")
 
 parser = PydanticOutputParser(pydantic_object=ImageInput)
 prompt = ChatPromptTemplate.from_template(
@@ -55,29 +55,29 @@ prompt = ChatPromptTemplate.from_template(
 ).partial(format_instructions=parser.get_format_instructions())
 extractor_chain = prompt | ChatOpenAI(model="gpt-4o-mini") | parser
 
-# Mô tả Ảnh
+# Image Description
 class ImageDescription(BaseModel):
-    image_description: str = Field(description="Mô tả chi tiết về ảnh")
+    image_description: str = Field(description="Detailed description of the image")
 
 def image_describer_prompt_func(inputs: dict):
     image_path_or_url = inputs["image_path_or_url"]
     image_b64, image_mime_type = encode_image(image_path_or_url, get_mime_type=True)
     image_describer_chat_template = ChatPromptTemplate.from_messages([
         SystemMessage(
-            content="""You are an expert image describer with advanced analytical capabilities. When presented with an image, provide a highly detailed, accurate, and objective description of its visible content. Structure your response as a comprehensive report, covering the following aspects in depth:
+            content="""Bạn là một chuyên gia mô tả hình ảnh với khả năng phân tích nâng cao. Khi được trình bày một hình ảnh, hãy cung cấp mô tả chi tiết, chính xác và khách quan về nội dung nhìn thấy của nó. Cấu trúc phản hồi của bạn như một báo cáo toàn diện, bao quát các khía cạnh sau một cách sâu sắc:
 
-- **Overall Composition and Layout**: Describe the image's structure (e.g., symmetrical/asymmetrical, rule of thirds), focal points, foreground/background separation, and spatial organization (e.g., left/right/center dominance).
-- **Objects and Entities**: List all primary and secondary objects/people/animals, their classifications (e.g., breed/species if inferable), quantities, sizes (relative to frame, e.g., 'occupies 30% of the image'), precise positions (e.g., 'top-left corner, centered horizontally'), and relationships/interactions (e.g., 'object A overlaps object B by 20%').
-- **Colors and Lighting**: Analyze color palette (dominant hues, contrasts, saturation), lighting sources (natural/artificial, direction/shadows), and effects (e.g., high-key/low-key, glare, highlights/lowlights).
-- **Textures and Materials**: Detail surface qualities (e.g., smooth/rough, glossy/matte), materials (e.g., wood/metal/fabric), and patterns (e.g., repetitive motifs, gradients).
-- **Actions and Dynamics**: Describe any motion/implied movement (e.g., 'person running towards right, blurred background suggesting speed'), poses/expressions (e.g., 'smiling face with raised eyebrows indicating surprise'), and temporal elements (e.g., 'daytime scene with long shadows suggesting afternoon').
-- **Context and Inferences**: Infer logical settings (e.g., 'urban street in modern city, likely evening based on lighting'), era/style (e.g., 'vintage photo from 1950s aesthetic'), and potential narratives (e.g., 'family gathering in a park')—but only if directly supported by visible evidence.
-- **Text and Symbols**: Transcribe all visible text exactly (including fonts/styles), and describe any symbols/logos/icons with their meanings if obvious.
-- **Technical Details**: Note image quality (e.g., resolution artifacts, noise), perspective (e.g., wide-angle distortion), and anomalies (e.g., overexposure in areas).
+- **Bố cục Tổng thể và Cấu trúc**: Mô tả cấu trúc của hình ảnh (ví dụ: đối xứng/không đối xứng, quy tắc một phần ba), điểm tập trung, phân cách tiền cảnh/nền, và tổ chức không gian (ví dụ: ưu thế bên trái/phải/trung tâm).
+- **Đối tượng và Thực thể**: Liệt kê tất cả đối tượng chính và phụ/người/động vật, phân loại chúng (ví dụ: giống/loài nếu có thể suy luận), số lượng, kích thước (tương đối với khung hình, ví dụ: 'chiếm 30% hình ảnh'), vị trí chính xác (ví dụ: 'góc trên bên trái, nằm giữa theo chiều ngang'), và mối quan hệ/tương tác (ví dụ: 'đối tượng A chồng lên đối tượng B 20%').
+- **Màu sắc và Ánh sáng**: Phân tích bảng màu (màu sắc thống trị, độ tương phản, độ bão hòa), nguồn sáng (tự nhiên/nhân tạo, hướng/bóng), và hiệu ứng (ví dụ: độ sáng cao/thấp, chói, điểm sáng/bóng tối).
+- **Kết cấu và Chất liệu**: Chi tiết chất lượng bề mặt (ví dụ: mịn/thô, bóng/mờ), chất liệu (ví dụ: gỗ/kim loại/vải), và mẫu hình (ví dụ: motif lặp lại, gradient).
+- **Hành động và Động lực**: Mô tả bất kỳ chuyển động/gợi ý chuyển động nào (ví dụ: 'người chạy về bên phải, nền mờ gợi ý tốc độ'), tư thế/biểu cảm (ví dụ: 'khuôn mặt cười với lông mày nhướng lên cho thấy sự ngạc nhiên'), và yếu tố thời gian (ví dụ: 'cảnh ban ngày với bóng dài gợi ý buổi chiều').
+- **Ngữ cảnh và Suy luận**: Suy luận ngữ cảnh logic (ví dụ: 'đường phố đô thị trong thành phố hiện đại, có lẽ buổi tối dựa trên ánh sáng'), thời đại/phong cách (ví dụ: 'ảnh cổ điển với thẩm mỹ những năm 1950'), và câu chuyện tiềm năng (ví dụ: 'cuộc tụ họp gia đình trong công viên')—nhưng chỉ nếu được hỗ trợ trực tiếp bởi bằng chứng nhìn thấy.
+- **Văn bản và Biểu tượng**: Sao chép tất cả văn bản nhìn thấy chính xác (bao gồm font/phong cách), và mô tả bất kỳ biểu tượng/logo/biểu tượng nào với ý nghĩa nếu rõ ràng.
+- **Chi tiết Kỹ thuật**: Ghi chú chất lượng hình ảnh (ví dụ: hiện vật độ phân giải, nhiễu), góc nhìn (ví dụ: biến dạng góc rộng), và bất thường (ví dụ: phơi sáng quá mức ở các khu vực).
 
-Ensure the description is exhaustive yet concise, prioritized by salience (most prominent elements first). Avoid any information not visible or reasonably inferable; do not speculate, add personal opinions, or hallucinate details. If the image is unclear in parts, note it explicitly (e.g., 'blurred area in bottom-right prevents identification')."""),
+Đảm bảo mô tả toàn diện nhưng ngắn gọn, ưu tiên theo mức độ nổi bật (yếu tố nổi bật nhất trước). Tránh bất kỳ thông tin nào không nhìn thấy hoặc có thể suy luận hợp lý; không suy đoán, thêm ý kiến cá nhân, hoặc tưởng tượng chi tiết. Nếu hình ảnh không rõ ràng ở một phần, hãy ghi chú rõ ràng (ví dụ: 'khu vực mờ ở góc dưới bên phải ngăn cản việc nhận dạng')."""),
         HumanMessage(content=[
-            {"type": "text", "text": "Describe the following image for me:"},
+            {"type": "text", "text": "Mô tả hình ảnh sau cho tôi:"},
             {
                 "type": "image_url",
                 "image_url": {"url": f"data:{image_mime_type};base64,{image_b64}", "detail": "high"}  # Thay 'low' bằng 'high' để phân tích chi tiết hơn
@@ -88,13 +88,13 @@ Ensure the description is exhaustive yet concise, prioritized by salience (most 
 
 image_describer_agent = image_describer_prompt_func | ChatOpenAI(model="gpt-4o-mini").with_structured_output(ImageDescription)
 
-# Công cụ Mô tả Ảnh
+# Image Describer Tool
 class ImageDescriberInput(BaseModel):
-    text: str = Field(description="Đường dẫn hoặc URL ảnh ở định dạng PNG hoặc JPG/JPEG")
+    text: str = Field(description="Path or URL to the image in the format PNG or JPG/JPEG")
 
 class ImageDescriberTool(BaseTool):
     name: str = "image_describer"
-    description: str = "Công cụ này có thể mô tả ảnh một cách chi tiết"
+    description: str = "This tool can describe the image in a detailed way"
     args_schema: Type[BaseModel] = ImageDescriberInput
     return_direct: bool = True
 
@@ -102,32 +102,32 @@ class ImageDescriberTool(BaseTool):
         try:
             parsed = extractor_chain.invoke({"input": text})
         except Exception as e:
-            return f"Không thể trích xuất URL ảnh: {str(e)}"
+            return f"Failed to extract image URL: {str(e)}"
         image_path_or_url = parsed.image_path_or_url
         if not image_path_or_url:
-            return "Không tìm thấy URL ảnh trong đầu vào."
+            return "No image URL found in the input."
         output = image_describer_agent.invoke({"image_path_or_url": image_path_or_url})
         return output.image_description
 
 image_describer_tool = ImageDescriberTool()
 
-# Công cụ Phát hiện và Đếm Đối tượng
+# Object Detection Tool
 class ObjectDetectingAndCountingInput(BaseModel):
-    text: str = Field(description="Đường dẫn hoặc URL ảnh ở định dạng PNG hoặc JPG/JPEG")
+    text: str = Field(description="Path or URL to the image in the format PNG or JPG/JPEG")
 
 @tool(
     "detect_and_count_objects",
-    description="Phát hiện và đếm đối tượng trong ảnh. Kết quả trả về là từ điển, chứa từ điển đếm (đếm số lượng từng lớp đối tượng) và danh sách từ điển chứa tên đối tượng, điểm tin cậy, và vị trí trong ảnh (định dạng (x1, x2, y1, y2)).",
+    description="Detect and count objects within the image. The return will be a dictionary, containing the counting dictionary (counting how many instance of each object class) and a list of dictionaries, containing the object names, confidence scores, and location in the image (in (x1, x2, y1, y2) format).",
     args_schema=ObjectDetectingAndCountingInput
 )
 def detect_and_count_object_tool(text: str):
     try:
         parsed = extractor_chain.invoke({"input": text})
     except Exception as e:
-        return f"Không thể trích xuất URL ảnh: {str(e)}"
+        return f"Failed to extract image URL: {str(e)}"
     image_path_or_url = parsed.image_path_or_url
     if not image_path_or_url:
-        return "Không tìm thấy URL ảnh trong đầu vào."
+        return "No image URL found in the input."
 
     results = yolo_model(image_path_or_url, verbose=False)
 
