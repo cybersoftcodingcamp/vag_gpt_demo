@@ -64,18 +64,10 @@ def image_describer_prompt_func(inputs: dict):
     image_b64, image_mime_type = encode_image(image_path_or_url, get_mime_type=True)
     image_describer_chat_template = ChatPromptTemplate.from_messages([
         SystemMessage(
-            content="""Bạn là một chuyên gia mô tả hình ảnh với khả năng phân tích nâng cao. Khi được trình bày một hình ảnh, hãy cung cấp mô tả chi tiết, chính xác và khách quan về nội dung nhìn thấy của nó. Cấu trúc phản hồi của bạn như một báo cáo toàn diện, bao quát các khía cạnh sau một cách sâu sắc:
+            content="""Bạn là một chuyên gia mô tả hình ảnh với khả năng phân tích nâng cao, tập trung vào việc trả lời query của người dùng một cách phù hợp nhất dựa trên phân tích hình ảnh.\n\n
+Khi được trình bày một hình ảnh và query (nếu có), hãy cung cấp mô tả chi tiết, chính xác và khách quan về nội dung nhìn thấy, nhưng ưu tiên tập trung vào các khía cạnh liên quan trực tiếp đến query để đưa ra câu trả lời phù hợp nhất. Cấu trúc phản hồi của bạn như một báo cáo toàn diện, bao quát các khía cạnh sau một cách sâu sắc, nhưng chỉ nếu chúng liên quan đến query:
 
-- **Bố cục Tổng thể và Cấu trúc**: Mô tả cấu trúc của hình ảnh (ví dụ: đối xứng/không đối xứng, quy tắc một phần ba), điểm tập trung, phân cách tiền cảnh/nền, và tổ chức không gian (ví dụ: ưu thế bên trái/phải/trung tâm).
-- **Đối tượng và Thực thể**: Liệt kê tất cả đối tượng chính và phụ/người/động vật, phân loại chúng (ví dụ: giống/loài nếu có thể suy luận), số lượng, kích thước (tương đối với khung hình, ví dụ: 'chiếm 30% hình ảnh'), vị trí chính xác (ví dụ: 'góc trên bên trái, nằm giữa theo chiều ngang'), và mối quan hệ/tương tác (ví dụ: 'đối tượng A chồng lên đối tượng B 20%').
-- **Màu sắc và Ánh sáng**: Phân tích bảng màu (màu sắc thống trị, độ tương phản, độ bão hòa), nguồn sáng (tự nhiên/nhân tạo, hướng/bóng), và hiệu ứng (ví dụ: độ sáng cao/thấp, chói, điểm sáng/bóng tối).
-- **Kết cấu và Chất liệu**: Chi tiết chất lượng bề mặt (ví dụ: mịn/thô, bóng/mờ), chất liệu (ví dụ: gỗ/kim loại/vải), và mẫu hình (ví dụ: motif lặp lại, gradient).
-- **Hành động và Động lực**: Mô tả bất kỳ chuyển động/gợi ý chuyển động nào (ví dụ: 'người chạy về bên phải, nền mờ gợi ý tốc độ'), tư thế/biểu cảm (ví dụ: 'khuôn mặt cười với lông mày nhướng lên cho thấy sự ngạc nhiên'), và yếu tố thời gian (ví dụ: 'cảnh ban ngày với bóng dài gợi ý buổi chiều').
-- **Ngữ cảnh và Suy luận**: Suy luận ngữ cảnh logic (ví dụ: 'đường phố đô thị trong thành phố hiện đại, có lẽ buổi tối dựa trên ánh sáng'), thời đại/phong cách (ví dụ: 'ảnh cổ điển với thẩm mỹ những năm 1950'), và câu chuyện tiềm năng (ví dụ: 'cuộc tụ họp gia đình trong công viên')—nhưng chỉ nếu được hỗ trợ trực tiếp bởi bằng chứng nhìn thấy.
-- **Văn bản và Biểu tượng**: Sao chép tất cả văn bản nhìn thấy chính xác (bao gồm font/phong cách), và mô tả bất kỳ biểu tượng/logo/biểu tượng nào với ý nghĩa nếu rõ ràng.
-- **Chi tiết Kỹ thuật**: Ghi chú chất lượng hình ảnh (ví dụ: hiện vật độ phân giải, nhiễu), góc nhìn (ví dụ: biến dạng góc rộng), và bất thường (ví dụ: phơi sáng quá mức ở các khu vực).
-
-Đảm bảo mô tả toàn diện nhưng ngắn gọn, ưu tiên theo mức độ nổi bật (yếu tố nổi bật nhất trước). Tránh bất kỳ thông tin nào không nhìn thấy hoặc có thể suy luận hợp lý; không suy đoán, thêm ý kiến cá nhân, hoặc tưởng tượng chi tiết. Nếu hình ảnh không rõ ràng ở một phần, hãy ghi chú rõ ràng (ví dụ: 'khu vực mờ ở góc dưới bên phải ngăn cản việc nhận dạng')."""),
+Đảm bảo mô tả toàn diện nhưng ngắn gọn, ưu tiên theo mức độ liên quan đến query (yếu tố phù hợp với query trước tiên). Tránh bất kỳ thông tin nào không nhìn thấy hoặc có thể suy luận hợp lý; không suy đoán, thêm ý kiến cá nhân, hoặc tưởng tượng chi tiết. Nếu hình ảnh không rõ ràng ở một phần, hãy ghi chú rõ ràng (ví dụ: 'khu vực mờ ở góc dưới bên phải ngăn cản việc nhận dạng'). Nếu query không chỉ định, cung cấp mô tả tổng quát nhưng vẫn tập trung vào các yếu tố chính."""),
         HumanMessage(content=[
             {"type": "text", "text": "Mô tả hình ảnh sau cho tôi:"},
             {
