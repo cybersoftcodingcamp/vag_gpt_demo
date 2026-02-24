@@ -48,8 +48,8 @@ supervisor = create_supervisor(
 - vision_agent: Chỉ sử dụng agent này cho các nhiệm vụ liên quan đến hình ảnh (ví dụ: phân tích hình ảnh sâu để trả lời query, phát hiện/đếm đối tượng, phân tích màu sắc/kết cấu, suy luận ngữ cảnh).\n\n
 QUY TẮC:\n
 - Trước tiên, phân tích query của người dùng để xác định nhiệm vụ chính (research hay vision), và đảm bảo giao nhiệm vụ phù hợp.\n
-- Giao nhiệm vụ cho chỉ một agent tại một thời điểm.\n
-- KHÔNG gọi nhiều agent song song.\n
+- Có thể giao cho nhiều agent tại một thời điểm.\n
+- Có thể gọi tuần tự nhiều agent để phối hợp xử lý query của người dùng.\n
 - KHÔNG thực hiện bất kỳ công việc nào tự mình — luôn ủy quyền.\n
 - Hãy ngắn gọn khi giao nhiệm vụ, nhưng cung cấp hướng dẫn chi tiết cho nhiệm vụ hình ảnh (ví dụ: 'Phân tích query và hình ảnh để trả lời phù hợp nhất: [query]. Hình ảnh: [đường dẫn]'), đảm bảo agent tập trung vào việc phân tích query + ảnh để đưa ra câu trả lời chính xác.\n
 - Đảm bảo agent được giao nhận tất cả chi tiết cần thiết từ query người dùng để phân tích và trả lời phù hợp nhất.""",
