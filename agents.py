@@ -2,8 +2,7 @@
 from langchain_community.tools import ArxivQueryRun, WikipediaQueryRun
 from langchain_community.utilities import ArxivAPIWrapper, WikipediaAPIWrapper
 from langchain_openai import ChatOpenAI
-# from langgraph.prebuilt import create_react_agent
-from langchain.agents import create_agent
+from langchain.agents import create_react_agent
 from langgraph_supervisor import create_supervisor
 from langchain.chat_models import init_chat_model
 from tools import image_describer_tool, detect_and_count_object_tool
@@ -16,19 +15,19 @@ wikipedia_wrapper = WikipediaAPIWrapper()
 wikipedia = WikipediaQueryRun(api_wrapper=wikipedia_wrapper, description="Search for information on a given topic using Wikipedia")
 
 # Research Agent
-research_agent = create_agent(
+research_agent = create_react_agent(
     model=ChatOpenAI(model="gpt-4o-mini"),
     tools=[arxiv, wikipedia],
-    system_prompt="You are a research agent.\n\nINSTRUCTIONS:\n- Assist ONLY with research-related tasks, DO NOT do any math\n- After you're done with your tasks, respond to the supervisor directly\n- Respond ONLY with the results of your work, do NOT include ANY other text.",
-    name="research_agent",  # name có thể không được hỗ trợ trực tiếp, nếu lỗi thì bỏ đi hoặc dùng middleware để set
+    prompt="You are a research agent.\n\nINSTRUCTIONS:\n- Assist ONLY with research-related tasks, DO NOT do any math\n- After you're done with your tasks, respond to the supervisor directly\n- Respond ONLY with the results of your work, do NOT include ANY other text.",
+    name="research_agent",
 )
 
 # Vision Agent
-vision_agent = create_agent(
+vision_agent = create_react_agent(
     model=ChatOpenAI(model="gpt-4o-mini"),
     tools=[image_describer_tool, detect_and_count_object_tool],
-    system_prompt="You are a vision agent.\n\nINSTRUCTIONS:\n- Assist ONLY with visual tasks (e.g., describing images, detecting and counting objects)\n- Use only the tools provided to analyze visual inputs\n- After completing your task, respond to the supervisor directly\n- Respond ONLY with the results of your work, do NOT include ANY other text.",
-    name="vision_agent",  # Tương tự, nếu lỗi thì bỏ
+    prompt="You are a vision agent.\n\nINSTRUCTIONS:\n- Assist ONLY with visual tasks (e.g., describing images, detecting and counting objects)\n- Use only the tools provided to analyze visual inputs\n- After completing your task, respond to the supervisor directly\n- Respond ONLY with the results of your work, do NOT include ANY other text.",
+    name="vision_agent"
 )
 
 # Supervisor
