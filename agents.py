@@ -16,7 +16,7 @@ wikipedia = WikipediaQueryRun(api_wrapper=wikipedia_wrapper, description="Search
 
 # Research Agent
 research_agent = create_react_agent(
-    model=ChatOpenAI(model="gpt-4o-mini"),
+    ChatOpenAI(model="gpt-4o-mini"),
     tools=[arxiv, wikipedia],
     prompt="You are a research agent.\n\nINSTRUCTIONS:\n- Assist ONLY with research-related tasks, DO NOT do any math\n- After you're done with your tasks, respond to the supervisor directly\n- Respond ONLY with the results of your work, do NOT include ANY other text.",
     name="research_agent",
@@ -24,7 +24,7 @@ research_agent = create_react_agent(
 
 # Vision Agent
 vision_agent = create_react_agent(
-    model=ChatOpenAI(model="gpt-4o-mini"),
+    ChatOpenAI(model="gpt-4o-mini"),
     tools=[image_describer_tool, detect_and_count_object_tool],
     prompt="You are a vision agent.\n\nINSTRUCTIONS:\n- Assist ONLY with visual tasks (e.g., describing images, detecting and counting objects)\n- Use only the tools provided to analyze visual inputs\n- After completing your task, respond to the supervisor directly\n- Respond ONLY with the results of your work, do NOT include ANY other text.",
     name="vision_agent"
